@@ -1,0 +1,187 @@
+@import "tailwindcss";
+
+@theme {
+  /* Surfaces */
+  --color-canvas: #0b0e14;
+  --color-panel: #141a24;
+  --color-panel2: #1c2430;
+  --color-hairline: #26303d;
+
+  /* Text */
+  --color-ink: #e8ecef;
+  --color-muted: #7a8699;
+
+  /* Status accent system (color = status, not decoration) */
+  --color-free: #00d9c0; /* free / success / confirm */
+  --color-occupied: #ff6b4a; /* occupied / active session */
+  --color-warn: #ffb020; /* maintenance / low balance / alerts */
+  --color-danger: #f0455c; /* cancel / delete / errors */
+
+  /* Fonts */
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Numerals: timers, prices, durations — tabular so digits don't shift */
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* Skeleton shimmer for loading states */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-panel) 25%,
+    var(--color-panel2) 37%,
+    var(--color-panel) 63%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease infinite;
+}
+
+/* Live "breathing" colon separator for running timers */
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+.breathe {
+  animation: breathe 1.4s ease-in-out infinite;
+}
+
+/* Soft glow pulse for occupied cards so staff register them on a busy grid */
+@keyframes statuspulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 107, 74, 0);
+  }
+  50% {
+    box-shadow: 0 0 0 3px rgba(255, 107, 74, 0.18);
+  }
+}
+.pulse-occupied {
+  animation: statuspulse 2.6s ease-in-out infinite;
+}
+
+/* Toast slide-in from top */
+@keyframes toastin {
+  from {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.toast-in {
+  animation: toastin 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Modal / sheet slide up */
+@keyframes sheetin {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.sheet-in {
+  animation: sheetin 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Page cross-fade */
+@keyframes pagein {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.page-in {
+  animation: pagein 0.18s ease-out;
+}
+
+/* Custom dark scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(122, 134, 153, 0.25);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(122, 134, 153, 0.4);
+  background-clip: padding-box;
+}
+
+/* Respect reduced-motion: kill pulses/scales, keep only fades */
+@media (prefers-reduced-motion: reduce) {
+  .breathe,
+  .pulse-occupied,
+  .skeleton {
+    animation: none !important;
+  }
+  .sheet-in,
+  .toast-in,
+  .page-in {
+    animation: pagein 0.01s !important;
+  }
+}
+
+/* Print only the bill when printing */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-bill,
+  .print-bill * {
+    visibility: visible;
+  }
+  .print-bill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    border: none !important;
+    box-shadow: none !important;
+  }
+}
