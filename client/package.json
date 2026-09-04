@@ -1,0 +1,40 @@
+{
+  "name": "gamelounge-client",
+  "version": "1.0.0",
+  "description": "Gaming Lounge Client - PC Agent for Admin Dashboard",
+  "main": "main.js",
+  "author": "Gaming Lounge OS",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "build": "electron-builder --win",
+    "build:win": "electron-builder --win --x64",
+    "pack": "electron-builder --dir"
+  },
+  "dependencies": {
+    "firebase": "^12.16.0"
+  },
+  "devDependencies": {
+    "electron": "^30.0.0",
+    "electron-builder": "^24.9.0"
+  },
+  "build": {
+    "appId": "com.gamelounge.client",
+    "productName": "GameLounge Client",
+    "win": {
+      "target": "nsis",
+      "icon": "icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "directories": {
+      "output": "dist"
+    }
+  }
+}

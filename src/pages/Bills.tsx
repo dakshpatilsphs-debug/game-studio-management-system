@@ -453,14 +453,14 @@ function BillViewModal({
                     <p className="mt-1 font-serif text-sm italic" style={{ color: LUX_GRAPHITE }}>{formatAmountInWords(bill.total, cur)}</p>
                   </div>
 
-                  {settings.upiId && (
-                    <div className="mt-4 flex flex-col items-center gap-2 rounded-xl border bg-white p-4" style={{ borderColor: LUX_LINE }}>
-                      <p className="text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: LUX_GOLDD }}>Scan to Pay via UPI</p>
-                      <UPIQR bill={bill} settings={settings} size={140} />
-                      <p className="font-serif text-xs" style={{ color: LUX_GRAPHITE }}>UPI: {settings.upiId} • {fmtMoney(bill.total)} — amount auto-filled</p>
-                      <p className="text-[10px] text-muted">GPay • PhonePe • Paytm • BHIM</p>
-                    </div>
-                  )}
+                  <div className="mt-4 flex flex-col items-center gap-2 rounded-xl border bg-white p-4" style={{ borderColor: LUX_LINE }}>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: LUX_GOLDD }}>Scan to Pay via UPI — Amount Auto-filled</p>
+                    <UPIQR bill={bill} settings={settings} size={150} />
+                    <p className="font-serif text-xs" style={{ color: LUX_GRAPHITE }}>
+                      {settings.upiId ? `UPI: ${settings.upiId} • ${fmtMoney(bill.total)}` : "Set UPI ID in Settings → Business & payment"}
+                    </p>
+                    <p className="text-[10px] text-muted">GPay • PhonePe • Paytm • BHIM — scan with any UPI app</p>
+                  </div>
 
                   {/* Paid via */}
                   {bill.paymentMethod && (
@@ -553,14 +553,14 @@ function BillViewModal({
                     <p className="mt-1 font-serif text-sm italic leading-snug" style={{ color: LUX_GRAPHITE }}>{formatAmountInWords(bill.total, cur)}</p>
                   </div>
 
-                  {settings.upiId && (
-                    <div className="mt-4 flex flex-col items-center gap-2 rounded-xl border bg-white p-4" style={{ borderColor: LUX_LINE }}>
-                      <p className="text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: LUX_GOLDD }}>Scan to Pay via UPI</p>
-                      <UPIQR bill={bill} settings={settings} size={140} />
-                      <p className="font-serif text-xs" style={{ color: LUX_GRAPHITE }}>UPI: {settings.upiId} • {fmtMoney(bill.total)} — amount auto-filled</p>
-                      <p className="text-[10px] text-muted">GPay • PhonePe • Paytm • BHIM</p>
-                    </div>
-                  )}
+                  <div className="mt-4 flex flex-col items-center gap-2 rounded-xl border bg-white p-4" style={{ borderColor: LUX_LINE }}>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: LUX_GOLDD }}>Scan to Pay via UPI — Amount Auto-filled</p>
+                    <UPIQR bill={bill} settings={settings} size={150} />
+                    <p className="font-serif text-xs" style={{ color: LUX_GRAPHITE }}>
+                      {settings.upiId ? `UPI: ${settings.upiId} • ${fmtMoney(bill.total)}` : "Set UPI ID in Settings → Business & payment to enable"}
+                    </p>
+                    <p className="text-[10px] text-muted">GPay • PhonePe • Paytm • BHIM — scan with any UPI app</p>
+                  </div>
 
                   {(settings.bankName || settings.bankAccount || settings.upiId || settings.paypal || settings.swift) && (
                     <div className="mt-9 border-t pt-4" style={{ borderColor: LUX_LINE }}>

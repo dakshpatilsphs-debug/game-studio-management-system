@@ -1,5 +1,8 @@
-import QRCode from "qrcode";
+import * as QRCodeImport from "qrcode";
 import type { Bill, Settings } from "./types";
+
+// handle both default and namespace import for Vite/singlefile
+const QRCode: any = (QRCodeImport as any).default || QRCodeImport;
 
 export function buildUPIString(bill: Bill, settings: Pick<Settings, "upiId" | "studioName">): string | null {
   const pa = settings.upiId?.trim();

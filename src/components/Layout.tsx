@@ -15,6 +15,7 @@ import {
   Users,
   WifiOff,
   Calendar,
+  Monitor,
 } from "lucide-react";
 import { cn } from "../utils/cn";
 import { useData } from "../lib/store";
@@ -22,6 +23,7 @@ import { useAuth } from "../lib/auth";
 import { fileToLogo } from "../lib/image";
 import { STATION_TYPES, type StationType, type Settings } from "../lib/types";
 import { Modal, Input, Button, Select } from "./ui";
+import { UPIQR } from "./UPIQR";
 
 export type PageId =
   | "dashboard"
@@ -31,6 +33,7 @@ export type PageId =
   | "reports"
   | "bills"
   | "prebooks"
+  | "clients"
   | "ai";
 
 const NAV: { id: PageId; label: string; icon: ReactNode }[] = [
@@ -41,6 +44,7 @@ const NAV: { id: PageId; label: string; icon: ReactNode }[] = [
   { id: "expenses", label: "Expenses", icon: <Receipt className="h-5 w-5" /> },
   { id: "reports", label: "Reports", icon: <BarChart3 className="h-5 w-5" /> },
   { id: "prebooks", label: "Prebooks", icon: <Calendar className="h-5 w-5" /> },
+  { id: "clients", label: "PC Clients", icon: <Monitor className="h-5 w-5" /> },
   { id: "ai", label: "AI Assistant", icon: <Sparkles className="h-5 w-5" /> },
 ];
 
@@ -247,6 +251,10 @@ function SettingsModal({
   const [terms, setTerms] = useState(settings.paymentTerms || "");
   const [roundOff, setRoundOff] = useState(String(settings.billingRoundOffMinutes ?? 15));
   const [depositPct, setDepositPct] = useState(String(settings.prebookDepositPercent ?? 30));
+  const [pairingCode, setPairingCode] = useState(settings.clientPairingCode || "");
+  const [lockCooldown, setLockCooldown] = useState(String(settings.lockCooldownMinutes ?? 10));
+  const [allowedApps, setAllowedApps] = useState(settings.allowedApps || "");
+  const [blockedApps, setBlockedApps] = useState(settings.blockedApps || "");
 
   // keep local form in sync when settings change or modal re-opens
   useEffect(() => {
@@ -270,6 +278,10 @@ function SettingsModal({
       setTerms(settings.paymentTerms || "");
       setRoundOff(String(settings.billingRoundOffMinutes ?? 15));
       setDepositPct(String(settings.prebookDepositPercent ?? 30));
+      setPairingCode(settings.clientPairingCode || "");
+      setLockCooldown(String(settings.lockCooldownMinutes ?? 10));
+      setAllowedApps(settings.allowedApps || "");
+      setBlockedApps(settings.blockedApps || "");
     }
   }, [open, settings]);
 
@@ -412,6 +424,22 @@ function SettingsModal({
             <Input label="UPI ID" value={upiId} onChange={(e) => setUpiId(e.target.value)} placeholder="studio@upi" />
             <Input label="PayPal" value={paypal} onChange={(e) => setPaypal(e.target.value)} placeholder="me@paypal" />
           </div>
+          {upiId.trim() ? (
+            <div className="mt-3 flex items-center gap-3 rounded-xl border border-hairline bg-panel p-3">
+              <div className="flex-1">
+                <p className="text-xs font-bold uppercase tracking-widest text-muted">UPI QR Preview</p>
+                <p className="mt-1 text-xs text-muted">What customers scan on invoice/receipt — amount auto-filled via <span className="font-mono text-ink">{upiId.trim()}</span></p>
+                <p className="mt-1 text-xs text-free">Try scan with GPay/PhonePe — demo ₹100</p>
+              </div>
+              <UPIQR
+                bill={{ id: "preview", billNumber: "DEMO-001", customerName: "Demo", items: [{ description: "Demo", qty: 1, price: 100 }], subtotal: 100, taxRate: 0, taxAmount: 0, discount: 0, total: 100, paymentMethod: "UPI", createdAt: Date.now() } as any}
+                settings={{ upiId: upiId.trim(), studioName: name || settings.studioName } as any}
+                size={84}
+              />
+            </div>
+          ) : (
+            <p className="mt-2 text-xs text-muted">↑ Add your UPI ID to show QR on invoices, receipts & prebook deposits (GPay/PhonePe auto-fill)</p>
+          )}
           <div className="mt-3">
             <Input label="Beneficiary (account holder)" value={beneficiary} onChange={(e) => setBeneficiary(e.target.value)} placeholder={settings.studioName} />
           </div>
@@ -429,6 +457,27 @@ function SettingsModal({
         </div>
 
         <div className="rounded-xl border border-hairline bg-panel2 p-4">
+          <p className="mb-2 text-sm font-medium text-muted">Client PCs (EXE) — WiFi/LAN pairing</p>
+          <p className="mb-3 text-xs text-muted">Install the EXE on each gaming PC. Enter the pairing code + studio link to connect. Admin sees live status (Ready/Maintenance/Locked) and can extend timer.</p>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-muted">Pairing Code (unique per studio)</label>
+              <div className="flex gap-2">
+                <input value={pairingCode} onChange={(e) => setPairingCode(e.target.value.toUpperCase())} placeholder="e.g. LUX4A9" className="mono flex-1 rounded-xl border border-hairline bg-panel px-3.5 py-2.5 text-sm font-bold tracking-widest text-ink outline-none focus:border-free/50" maxLength={6} />
+                <Button size="sm" variant="outline" onClick={() => setPairingCode(Math.random().toString(36).toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 4) + Math.floor(1000 + Math.random() * 9000).toString().slice(0, 2))}>Regen</Button>
+              </div>
+              <p className="mt-1 text-xs text-muted">Share this + prebook link shown in Prebooks page. Different for each user.</p>
+            </div>
+            <Input label="Lock cooldown after timer ends (minutes)" type="number" value={lockCooldown} onChange={(e) => setLockCooldown(e.target.value)} />
+          </div>
+          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Input label="Allowed apps (comma, e.g. valorant.exe, steam.exe)" value={allowedApps} onChange={(e) => setAllowedApps(e.target.value)} placeholder="leave empty = all allowed" />
+            <Input label="Blocked apps (comma, e.g. chrome.exe)" value={blockedApps} onChange={(e) => setBlockedApps(e.target.value)} placeholder="special app usage to block" />
+          </div>
+          <p className="mt-2 text-xs text-muted">Timer: when session ends, PC locks for <b className="text-ink">{lockCooldown} min</b> (no access), message to admin “going to shut”, admin can extend time from Clients dashboard.</p>
+        </div>
+
+        <div className="rounded-xl border border-hairline bg-panel2 p-4">
           <p className="mb-2 text-sm font-medium text-muted">Data management</p>
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={onSeed}>Load demo data</Button>
@@ -438,7 +487,7 @@ function SettingsModal({
 
         <div className="flex justify-end gap-2 pt-1">
           <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button onClick={() => { onSave({ studioName: name, currency, taxRate: Number(tax) || 0, logo, rates, snacks, businessEmail: email, businessPhone: phone, businessAddress: address, upiId, bankName, bankAccount, bankIfsc, swift, beneficiary, paypal, paymentTerms: terms, billingRoundOffMinutes: Number(roundOff) || 15, prebookDepositPercent: Number(depositPct) || 30 } as Settings); onClose(); }}>Save changes</Button>
+          <Button onClick={() => { onSave({ studioName: name, currency, taxRate: Number(tax) || 0, logo, rates, snacks, businessEmail: email, businessPhone: phone, businessAddress: address, upiId, bankName, bankAccount, bankIfsc, swift, beneficiary, paypal, paymentTerms: terms, billingRoundOffMinutes: Number(roundOff) || 15, prebookDepositPercent: Number(depositPct) || 30, clientPairingCode: pairingCode.trim().toUpperCase() || undefined, lockCooldownMinutes: Number(lockCooldown) || 10, allowedApps: allowedApps.trim() || undefined, blockedApps: blockedApps.trim() || undefined } as Settings); onClose(); }}>Save changes</Button>
         </div>
       </div>
     </Modal>

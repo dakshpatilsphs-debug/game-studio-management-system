@@ -34,6 +34,7 @@ import type {
   ExtraItem,
   PaymentMethod,
   Prebook,
+  ClientPC,
 } from "./types";
 
 type Mode = "cloud" | "local";
@@ -81,6 +82,7 @@ interface DataValue {
   bills: Bill[];
   customers: Customer[];
   prebooks: Prebook[];
+  clients: ClientPC[];
   settings: Settings;
   setSettings: (s: Partial<Settings>) => void;
   getRate: (type: StationType) => RateConfig;
@@ -106,11 +108,18 @@ interface DataValue {
   updatePrebook: (id: string, patch: Partial<Prebook>) => void;
   deletePrebook: (id: string) => void;
   convertPrebook: (id: string) => void;
+  updateClient: (id: string, patch: Partial<ClientPC>) => void;
+  deleteClient: (id: string) => void;
+  extendClientTime: (id: string, extraMinutes: number) => void;
   seedDemoData: () => void;
   clearAllData: () => void;
 }
 
 const DataCtx = createContext<DataValue | null>(null);
+
+function genPairingCode() {
+  return Math.random().toString(36).toUpperCase().replace(/[^A-Z0-9]/g, "").slice(2, 6).padEnd(4, "X") + Math.floor(100 + Math.random() * 900).toString().slice(1);
+}
 
 const DEFAULT_SETTINGS: Settings = {
   studioName: "Gaming Lounge",
@@ -120,6 +129,10 @@ const DEFAULT_SETTINGS: Settings = {
   snacks: DEFAULT_SNACKS,
   billingRoundOffMinutes: 15,
   prebookDepositPercent: 30,
+  clientPairingCode: genPairingCode(),
+  lockCooldownMinutes: 10,
+  allowedApps: "",
+  blockedApps: "",
 };
 
 interface Bucket {
@@ -129,17 +142,22 @@ interface Bucket {
   bills: Bill[];
   customers: Customer[];
   prebooks: Prebook[];
+  clients: ClientPC[];
 }
-const EMPTY_BUCKET: Bucket = { stations: [], sessions: [], expenses: [], bills: [], customers: [], prebooks: [] };
+const EMPTY_BUCKET: Bucket = { stations: [], sessions: [], expenses: [], bills: [], customers: [], prebooks: [], clients: [] };
 
 function mergeSettings(loaded: Partial<Settings>): Settings {
   const ro = (loaded as any).billingRoundOffMinutes;
   const pp = (loaded as any).prebookDepositPercent;
+  const pc = (loaded as any).clientPairingCode;
+  const lc = (loaded as any).lockCooldownMinutes;
   return {
     ...DEFAULT_SETTINGS,
     ...loaded,
     billingRoundOffMinutes: typeof ro === "number" && ro >= 1 ? ro : DEFAULT_SETTINGS.billingRoundOffMinutes,
     prebookDepositPercent: typeof pp === "number" && pp >= 0 && pp <= 100 ? pp : DEFAULT_SETTINGS.prebookDepositPercent,
+    clientPairingCode: typeof pc === "string" && pc.trim() ? pc.trim().toUpperCase() : DEFAULT_SETTINGS.clientPairingCode,
+    lockCooldownMinutes: typeof lc === "number" && lc >= 0 ? lc : DEFAULT_SETTINGS.lockCooldownMinutes,
     rates: { ...DEFAULT_RATES, ...(loaded.rates || {}) },
     snacks: loaded.snacks && loaded.snacks.length ? loaded.snacks : DEFAULT_SNACKS,
   };
@@ -208,11 +226,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [bills, setBills] = useState<Bill[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [prebooks, setPrebooks] = useState<Prebook[]>([]);
+  const [clients, setClients] = useState<ClientPC[]>([]);
   const [settings, setSettingsState] = useState<Settings>(DEFAULT_SETTINGS);
 
   useEffect(() => {
     if (userKey === null) return;
-    setStations([]); setSessions([]); setExpenses([]); setBills([]); setCustomers([]); setPrebooks([]);
+    setStations([]); setSessions([]); setExpenses([]); setBills([]); setCustomers([]); setPrebooks([]); setClients([]);
     setReady(false);
 
     if (guest) {
@@ -221,7 +240,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setMode("local");
       const b = loadBucket("guest");
       setStations(b.stations); setSessions(b.sessions); setExpenses(b.expenses);
-      setBills(b.bills); setCustomers(b.customers); setPrebooks(b.prebooks || []);
+      setBills(b.bills); setCustomers(b.customers); setPrebooks(b.prebooks || []); setClients((b as any).clients || []);
       setSettingsState(loadBucketSettings("guest"));
       setReady(true);
       const inited = localStorage.getItem(GUEST_INIT_KEY);
@@ -242,7 +261,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     const subs: [string, Dispatch<SetStateAction<any[]>>][] = [
       ["stations", setStations], ["sessions", setSessions], ["expenses", setExpenses],
-      ["bills", setBills], ["customers", setCustomers], ["prebooks", setPrebooks],
+      ["bills", setBills], ["customers", setCustomers], ["prebooks", setPrebooks], ["clients", setClients],
     ];
     subs.forEach(([name, setter]) => {
       try {
@@ -259,7 +278,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
               setMode("local");
               const b = loadBucket(user.uid);
               setStations(b.stations); setSessions(b.sessions); setExpenses(b.expenses);
-              setBills(b.bills); setCustomers(b.customers); setPrebooks(b.prebooks || []);
+              setBills(b.bills); setCustomers(b.customers); setPrebooks(b.prebooks || []); setClients((b as any).clients || []);
               setSettingsState(loadBucketSettings(user.uid));
               setReady(true);
             }
@@ -282,9 +301,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (mode === "local" && ready) {
-      saveBucket(bucketRef.current, { stations, sessions, expenses, bills, customers, prebooks });
+      saveBucket(bucketRef.current, { stations, sessions, expenses, bills, customers, prebooks, clients } as any);
     }
-  }, [mode, ready, stations, sessions, expenses, bills, customers, prebooks]);
+  }, [mode, ready, stations, sessions, expenses, bills, customers, prebooks, clients]);
 
   const C = (name: string) => collection(db, "users", user!.uid, name);
   const D = (name: string, id: string) => doc(db, "users", user!.uid, name, id);
@@ -492,8 +511,25 @@ export function DataProvider({ children }: { children: ReactNode }) {
     if (!pb) return;
     // mark converted and create a session for immediate use? For now just status
     await updatePrebook(id, { status: "converted" as const });
-    // optionally create a session if date is today
-    // we keep it simple: owner can manually start session from prebook
+  }
+
+  async function updateClient(id: string, patch: Partial<ClientPC>) {
+    if (cloud) { try { await updateDoc(D("clients", id), clean({ ...patch, lastSeen: Date.now() }) as any); } catch {} }
+    setClients((prev) => prev.map((x) => (x.id === id ? { ...x, ...patch, lastSeen: Date.now() } : x)));
+  }
+
+  async function deleteClient(id: string) {
+    if (cloud) { try { await deleteDoc(D("clients", id)); } catch {} }
+    setClients((prev) => prev.filter((x) => x.id !== id));
+  }
+
+  async function extendClientTime(id: string, extraMinutes: number) {
+    const c = clients.find((x) => x.id === id);
+    if (!c) return;
+    const base = c.sessionEnd && c.sessionEnd > Date.now() ? c.sessionEnd : Date.now();
+    const newEnd = base + extraMinutes * 60000;
+    const patch: Partial<ClientPC> = { sessionEnd: newEnd, status: "busy" as const, lockUntil: null };
+    await updateClient(id, patch);
   }
 
   function seedDemoIntoLocal(bucket: string) {
@@ -585,9 +621,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
         studioId: bucket,
       },
     ];
-    saveBucket(bucket, { stations: demoStations, sessions: demoSessions, expenses: demoExpenses, bills: demoBills, customers: demoCustomers, prebooks: demoPrebooks });
+    const demoClients: ClientPC[] = [
+      { id: "client-" + demoStations[0].id, pcName: demoStations[0].name + "-PC", ip: "192.168.1.101", status: "ready", lastSeen: now, pairingCode: "DEMO01", studioId: bucket, version: "1.0.0", specs: demoStations[0].specs },
+      { id: "client-" + demoStations[1].id, pcName: demoStations[1].name + "-PC", ip: "192.168.1.102", status: "busy", lastSeen: now, pairingCode: "DEMO01", studioId: bucket, currentSessionId: "active-1", sessionEnd: now + 45 * 60000, version: "1.0.0", appUsage: "valorant.exe" },
+      { id: "client-" + demoStations[4].id, pcName: demoStations[4].name + "-PC", ip: "192.168.1.105", status: "maintenance", lastSeen: now - 5 * 60000, pairingCode: "DEMO01", studioId: bucket, version: "1.0.0" },
+      { id: "client-" + demoStations[3].id, pcName: demoStations[3].name + "-PC", ip: "192.168.1.104", status: "locked", lastSeen: now, pairingCode: "DEMO01", studioId: bucket, lockUntil: now + 8 * 60000, version: "1.0.0" },
+    ];
+    saveBucket(bucket, { stations: demoStations, sessions: demoSessions, expenses: demoExpenses, bills: demoBills, customers: demoCustomers, prebooks: demoPrebooks, clients: demoClients } as any);
     setStations(demoStations); setSessions(demoSessions); setExpenses(demoExpenses);
-    setBills(demoBills); setCustomers(demoCustomers); setPrebooks(demoPrebooks);
+    setBills(demoBills); setCustomers(demoCustomers); setPrebooks(demoPrebooks); setClients(demoClients);
   }
 
   function seedDemoData() {
@@ -620,7 +662,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }
 
   const value: DataValue = {
-    ready, mode, stations, sessions, expenses, bills, customers, prebooks, settings,
+    ready, mode, stations, sessions, expenses, bills, customers, prebooks, clients, settings,
     setSettings, getRate, isHappyHour,
     addStation, updateStation, deleteStation,
     startSession, endSession, manualSession, deleteSession,
@@ -628,6 +670,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     addBill, updateBill, deleteBill,
     addCustomer, updateCustomer, deleteCustomer,
     addPrebook, addPrebookPublic, updatePrebook, deletePrebook, convertPrebook,
+    updateClient, deleteClient, extendClientTime,
     seedDemoData, clearAllData,
   };
 

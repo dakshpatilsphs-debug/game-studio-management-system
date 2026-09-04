@@ -126,6 +126,11 @@ export interface Settings {
   // Billing
   billingRoundOffMinutes?: number; // round up to nearest N minutes, e.g. 1,5,10,15,30
   prebookDepositPercent?: number; // % of rent to pay upfront for prebookings, editable
+  // Client PCs
+  clientPairingCode?: string; // 6-char code shown in admin, entered on client PCs
+  lockCooldownMinutes?: number; // cooldown after timer ends before PC can be reused (default 10)
+  allowedApps?: string; // comma-separated e.g. "valorant.exe, steam.exe" — special app usage handling
+  blockedApps?: string; // comma-separated blocked
 }
 
 export const EXPENSE_CATEGORIES: ExpenseCategory[] = [
@@ -175,3 +180,21 @@ export const STATION_TYPES: StationType[] = [
   "Nintendo Switch",
   "Racing",
 ];
+
+export type ClientStatus = "ready" | "busy" | "maintenance" | "locked" | "offline";
+
+export interface ClientPC {
+  id: string;
+  pcName: string;
+  ip?: string;
+  status: ClientStatus;
+  lastSeen: number;
+  pairingCode: string;
+  studioId: string;
+  currentSessionId?: string | null;
+  sessionEnd?: number | null; // when timer expires
+  lockUntil?: number | null; // cooldown until
+  appUsage?: string; // e.g. "valorant.exe"
+  version?: string;
+  specs?: string;
+}

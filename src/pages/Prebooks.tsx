@@ -7,7 +7,8 @@ import { formatMoney, formatDate, formatDateTime } from "../lib/format";
 import { useToast } from "../components/Toaster";
 import type { Prebook, Station } from "../lib/types";
 import { UPIQR } from "../components/UPIQR";
-import QRCode from "qrcode";
+import * as QRCodeImport from "qrcode";
+const QRCode: any = (QRCodeImport as any).default || QRCodeImport;
 
 export default function Prebooks() {
   const { stations, sessions, prebooks, settings, addPrebook, updatePrebook, deletePrebook, convertPrebook } = useData();

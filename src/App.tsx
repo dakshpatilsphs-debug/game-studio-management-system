@@ -14,6 +14,7 @@ import Reports from "./pages/Reports";
 import AI from "./pages/AI";
 import Prebooks from "./pages/Prebooks";
 import PublicPrebook from "./pages/PublicPrebook";
+import Clients from "./pages/Clients";
 
 function Pages() {
   const [page, setPage] = useState<PageId>("dashboard");
@@ -26,6 +27,7 @@ function Pages() {
       {page === "bills" && <Bills />}
       {page === "reports" && <Reports />}
       {page === "prebooks" && <Prebooks />}
+      {page === "clients" && <Clients />}
       {page === "ai" && <AI />}
     </Layout>
   );

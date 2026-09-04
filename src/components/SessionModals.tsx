@@ -284,14 +284,14 @@ export function BillSessionModal({
             </div>
             <p className="mt-2 text-xs italic text-muted">{formatAmountInWords(receipt.total, cur)}</p>
           </div>
-          {settings.upiId && (
-            <div className="mt-4 flex w-full max-w-sm flex-col items-center gap-2 rounded-xl border border-hairline bg-panel p-4">
-              <p className="text-[11px] font-bold uppercase tracking-widest text-muted">Scan to Pay via UPI</p>
-              <UPIQR bill={receipt} settings={settings} size={140} />
-              <p className="text-xs text-muted text-center">UPI: {settings.upiId} • {formatMoney(receipt.total, cur)} — amount auto-filled</p>
-              <p className="text-[10px] text-muted">GPay • PhonePe • Paytm • BHIM</p>
-            </div>
-          )}
+          <div className="mt-4 flex w-full max-w-sm flex-col items-center gap-2 rounded-xl border border-hairline bg-panel p-4">
+            <p className="text-[11px] font-bold uppercase tracking-widest text-muted">Scan to Pay via UPI — Amount Auto-filled</p>
+            <UPIQR bill={receipt} settings={settings} size={150} />
+            <p className="text-xs text-muted text-center">
+              {settings.upiId ? `UPI: ${settings.upiId} • ${formatMoney(receipt.total, cur)}` : "Set UPI ID in Settings to enable QR"}
+            </p>
+            <p className="text-[10px] text-muted">GPay • PhonePe • Paytm • BHIM</p>
+          </div>
           <div className="mt-5 flex w-full max-w-sm gap-2">
             <Button variant="outline" className="flex-1" onClick={async () => await generateSessionReceiptPDF(receipt, settings)}>
               <FileDown className="h-4 w-4" /> PDF Receipt
