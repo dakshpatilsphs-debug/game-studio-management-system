@@ -15,6 +15,7 @@ import AI from "./pages/AI";
 import Prebooks from "./pages/Prebooks";
 import PublicPrebook from "./pages/PublicPrebook";
 import Clients from "./pages/Clients";
+import ClientJoin from "./pages/ClientJoin";
 
 function Pages() {
   const [page, setPage] = useState<PageId>("dashboard");
@@ -60,11 +61,14 @@ function FullScreenSpinner({ label }: { label: string }) {
 
 function PrebookGate() {
   const [isPrebook, setIsPrebook] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const hash = window.location.hash;
     if (params.has("prebook") || hash.includes("prebook")) setIsPrebook(true);
+    if (params.has("client") || params.has("clientJoin") || hash.includes("client")) setIsClient(true);
   }, []);
+  if (isClient) return <ClientJoin />;
   if (isPrebook) return <PublicPrebook />;
   return (
     <AuthProvider>

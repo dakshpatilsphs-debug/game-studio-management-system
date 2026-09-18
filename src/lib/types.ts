@@ -197,4 +197,9 @@ export interface ClientPC {
   appUsage?: string; // e.g. "valorant.exe"
   version?: string;
   specs?: string;
+  // Link-based connection (one admin link joins all PCs)
+  stationId?: string | null; // linked Station.id in admin (PC-01 <-> client)
+  message?: string | null; // admin -> PC banner ("Please pay at counter")
+  command?: string | null; // admin -> PC remote action: "lock" | "unlock" | "restart" | "shutdown" | null (cleared after ack)
+  pairedAt?: number; // first join time
 }

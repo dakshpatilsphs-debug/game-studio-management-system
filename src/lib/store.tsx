@@ -168,6 +168,32 @@ export function getPrebookLink(uid: string): string {
   return `${base}?prebook=${uid}`;
 }
 
+/**
+ * One-link PC connection (industry-standard "agent join link").
+ * Admin copies this from PC Clients page, opens it on each gaming PC browser
+ * (or pastes UID+code into the EXE). All PCs with the same studio UID + pairing
+ * code heartbeat into users/{studioId}/clients and appear in one admin dashboard.
+ * Works on same WiFi/LAN or anywhere with internet (Firebase, free Spark tier).
+ */
+export function getClientJoinLink(studioId: string, pairingCode?: string): string {
+  const base = typeof window !== "undefined" ? window.location.origin + window.location.pathname : "";
+  const code = (pairingCode || "").trim().toUpperCase();
+  return code ? `${base}?client=${encodeURIComponent(studioId)}&code=${encodeURIComponent(code)}` : `${base}?client=${encodeURIComponent(studioId)}`;
+}
+
+export function parseClientJoinUrl(url?: string): { studioId: string; code: string } | null {
+  try {
+    const src = url || (typeof window !== "undefined" ? window.location.href : "");
+    const u = new URL(src);
+    const studioId = u.searchParams.get("client") || u.searchParams.get("clientJoin") || "";
+    const code = (u.searchParams.get("code") || "").toUpperCase().trim();
+    if (!studioId) return null;
+    return { studioId, code };
+  } catch {
+    return null;
+  }
+}
+
 function dataKey(bucket: string) {
   return `gsm_${bucket}_data_v1`;
 }
@@ -188,6 +214,7 @@ function loadBucket(bucket: string): Bucket {
         bills: p.bills || [],
         customers: p.customers || [],
         prebooks: p.prebooks || [],
+        clients: p.clients || [],
       };
     }
   } catch {
@@ -651,13 +678,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
   function clearAllData() {
     if (cloud) {
       const clear = (arr: { id: string }[], col: string) => arr.forEach((item) => { deleteDoc(D(col, item.id)).catch(() => {}); });
-      clear(stations, "stations"); clear(sessions, "sessions"); clear(expenses, "expenses"); clear(bills, "bills"); clear(customers, "customers"); clear(prebooks, "prebooks");
+      clear(stations, "stations"); clear(sessions, "sessions"); clear(expenses, "expenses"); clear(bills, "bills"); clear(customers, "customers"); clear(prebooks, "prebooks"); clear(clients, "clients");
       if (user) { deleteDoc(settingsRef()).catch(() => {}); }
     }
     localStorage.setItem(GUEST_INIT_KEY, "1");
     saveBucket(bucketRef.current, { ...EMPTY_BUCKET });
     localStorage.removeItem(settingsKey(bucketRef.current));
-    setStations([]); setSessions([]); setExpenses([]); setBills([]); setCustomers([]); setPrebooks([]);
+    setStations([]); setSessions([]); setExpenses([]); setBills([]); setCustomers([]); setPrebooks([]); setClients([]);
     setSettingsState(DEFAULT_SETTINGS);
   }
 

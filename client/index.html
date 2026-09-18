@@ -37,9 +37,9 @@
 
   <div id="pairCard" class="card">
     <h3 style="font-size:15px">🔗 Pair with Admin</h3>
-    <p class="small" style="margin:6px 0 12px">Open Admin → <b>Prebooks</b> or <b>PC Clients</b> page → copy <b>Prebook Link UID</b> ( ?prebook= ) and <b>Pairing Code</b> from Settings → Client PCs. All PCs on same WiFi/LAN with same code appear in admin dashboard.</p>
-    <label>Studio UID / Prebook Link</label>
-    <input id="uidInput" placeholder="Paste prebook link or UID e.g. Ab9Yz... or ?prebook=xxx" />
+    <p class="small" style="margin:6px 0 12px">Admin → <b>PC Clients</b> → Copy <b>“PC connect link”</b> (?client=UID&code=XXX) → paste it below. Code auto-fills. All PCs with same link appear in one admin dashboard. Browser join (no EXE) uses the same link.</p>
+    <label>Studio UID / PC connect link</label>
+    <input id="uidInput" placeholder="Paste PC connect link (?client=...) or UID e.g. Ab9Yz..." />
     <label style="margin-top:10px;display:block">Pairing Code (from Settings)</label>
     <input id="codeInput" placeholder="e.g. LUX4A9" maxlength="12" style="text-transform:uppercase;letter-spacing:0.12em;font-weight:700" />
     <button id="pairBtn" class="btn">Pair & Connect</button>

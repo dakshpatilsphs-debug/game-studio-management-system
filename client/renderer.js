@@ -71,13 +71,21 @@ function stopTimer() {
 async function pair() {
   const uidRaw = document.getElementById('uidInput').value.trim();
   let uid = uidRaw;
-  // extract ?prebook= from link if pasted full URL
+  // extract ?prebook= / ?client= / ?clientJoin= from full admin link (one-link connect)
   try {
-    if (uidRaw.includes('?prebook=')) uid = new URL(uidRaw).searchParams.get('prebook') || uidRaw;
+    if (uidRaw.includes('client=')) uid = new URL(uidRaw).searchParams.get('client') || uidRaw;
+    else if (uidRaw.includes('clientJoin=')) uid = new URL(uidRaw).searchParams.get('clientJoin') || uidRaw;
+    else if (uidRaw.includes('?prebook=')) uid = new URL(uidRaw).searchParams.get('prebook') || uidRaw;
     else if (uidRaw.includes('prebook')) {
       const m = uidRaw.match(/prebook[=/]([A-Za-z0-9_-]+)/);
       if (m) uid = m[1];
     }
+    // auto-fill code from &code= in the same link
+    try {
+      const u2 = new URL(uidRaw);
+      const c2 = u2.searchParams.get('code');
+      if (c2 && !document.getElementById('codeInput').value.trim()) document.getElementById('codeInput').value = c2.toUpperCase();
+    } catch {}
   } catch {}
   const code = document.getElementById('codeInput').value.trim().toUpperCase();
   const btn = document.getElementById('pairBtn');

@@ -35,31 +35,71 @@ Icon: replace `icon.ico` with your logo.
 
 All PCs on same WiFi/LAN with same code appear together; different studio's code shows only theirs.
 
-## Firestore Rules (add to allow public prebooks + clients read, pairing)
+## One-link connect (NEW — no EXE required)
+
+Admin → **PC Clients** → **Copy “PC connect link”** (`?client=UID&code=XXX`) → open it on each
+gaming PC browser → enter PC name → **Pair & Connect**. Keep tab open (F11 kiosk).
+Heartbeat every 30s, offline after 90s. Timer end → fullscreen lock (“going to shut”).
+EXE uses the same link (paste full link, code auto-fills). Both appear in one dashboard.
+
+## Firestore Rules (copy-paste this EXACTLY — no ``` fences)
+
+> The old snippet used `match /users/{userId}/{document=**}` + sibling matches.
+> That overlap is invalid and causes `Unexpected 'allow' / '}'` errors.
+> Use this nested version instead. In Firebase Console paste ONLY from
+> `rules_version` to the final `}`.
 
 ```js
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /users/{userId}/{document=**} {
+    match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-    // public prebook creation + client heartbeat (unauthenticated can create client/prebook for that studio)
-    match /users/{userId}/prebooks/{docId} {
-      allow read: if true;
-      allow create: if true;
-      allow update, delete: if request.auth != null && request.auth.uid == userId;
-    }
-    match /users/{userId}/clients/{docId} {
-      allow read: if request.auth != null && request.auth.uid == userId; // admin reads
-      allow create, update: if true; // client can write (pairingCode check in app)
-    }
-    match /pairingCodes/{code} {
-      allow read, write: if true;
+
+      match /settings/main {
+        allow read: if true;
+        allow write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      match /prebooks/{docId} {
+        allow read: if true;
+        allow create: if true;
+        allow update, delete: if request.auth != null && request.auth.uid == userId;
+      }
+
+      match /clients/{docId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow create, update: if true;
+        allow delete: if request.auth != null && request.auth.uid == userId;
+      }
+
+      match /stations/{docId} {
+        allow read: if true;
+        allow write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      match /sessions/{docId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      match /expenses/{docId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      match /bills/{docId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      match /customers/{docId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
     }
   }
 }
 ```
+
+> Without the `settings/main read: if true` line, browser link-join still pairs
+> (lenient fallback) but cannot verify a wrong code upfront — add it for best UX.
 
 For Spark free tier, local fallback via `localStorage` also works if offline.
 
